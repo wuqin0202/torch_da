@@ -1,17 +1,20 @@
 from torch.utils.data import DataLoader
 
 class CrossDomainLoader:
-    def __init__(self, datasets, batch_size=1, shuffle=True, num_workers=4):
+    def __init__(self, datasets, batch_size=1, shuffle=True, num_workers=4, mode='max'):
         self.loader_src = DataLoader(datasets[0], batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, drop_last=True)
-        self.loader_tar = DataLoader(datasets[1], batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, drop_last=True)
-        self.num_iters = max(len(self.loader_src), len(self.loader_tar))
+        self.loader_tgt = DataLoader(datasets[1], batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, drop_last=True)
+        if mode == 'max':
+            self.num_iters = max(len(self.loader_src), len(self.loader_tgt))
+        elif mode == 'min':
+            self.num_iters = min(len(self.loader_src), len(self.loader_tgt))
 
     def __len__(self):
         return self.num_iters
 
     def __iter__(self):
         self.iter_src = iter(self.loader_src)
-        self.iter_tar = iter(self.loader_tar)
+        self.iter_tar = iter(self.loader_tgt)
         self.cur_iter = 0
         return self
 
@@ -25,7 +28,7 @@ class CrossDomainLoader:
             try:
                 data_tar, label_tar = next(self.iter_tar)
             except StopIteration:
-                self.iter_tar = iter(self.loader_tar)
+                self.iter_tar = iter(self.loader_tgt)
                 data_tar, label_tar = next(self.iter_tar)
             self.cur_iter += 1
         else:
